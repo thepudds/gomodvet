@@ -1,0 +1,50 @@
+# enable modules.
+env GO111MODULE=on
+
+# first run fails: we have no 'go.mod' file in $WORK
+# note that we need to use '' to escape the single quote around 'go.mod'.
+! gomodvet
+stdout 'gomodvet: no current ''go.mod'' file. please run from within a module.'
+
+# cd to a directory with a 'hello.go' and a 'go.mod' file.
+cd gopath/src/sample
+
+# build to make sure we have a valid setup and up-to-date 'go.mod'.
+go build
+
+# gomodvet passes by default
+gomodvet
+
+# gomodvet fails if we ask to check -upgradesavailable. We pass -v in case we need to troubleshoot.
+! gomodvet -v -checkupgrades=true
+stdout 'gomodvet-002: the current module has available updates'
+
+# update to all latest dependencies
+go get -u
+
+# gomodvet now passes
+gomodvet -checkupgrades=true
+
+# while we are here: gomodvet should pass if we ask to check -checkmultiplemajor
+gomodvet -checkmultiplemajor=true
+
+# Two test files: a 'go.mod', and 'hello.go'.
+# The starting point for 'go.mod' is pointing at example-package-b v3.0.2.
+# The latest available version for example-package-b is v3.0.3.
+
+-- gopath/src/sample/go.mod --
+module sample/hello
+
+require github.com/thepudds/example-package-b/v3 v3.0.2
+
+-- gopath/src/sample/hello.go --
+
+package main
+
+import (
+	"github.com/thepudds/example-package-b/v3"   
+)
+
+func main() {
+	b.Hello()
+}
