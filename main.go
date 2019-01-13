@@ -12,9 +12,9 @@ import (
 )
 
 var (
-	flagCheckMultipleMajor = flag.Bool("checkmultiplemajor", false, "")
-	flagCheckUpgrades      = flag.Bool("checkupgrades", false, "")
-	flagVerbose            = flag.Bool("v", false, "")
+	flagCheckMultipleMajor = flag.Bool("checkmultiplemajor", true, "report if a module has multiple major versions in this build")
+	flagCheckUpgrades      = flag.Bool("checkupgrades", true, "report if the current module has available updates for its dependencies")
+	flagVerbose            = flag.Bool("v", false, "verbose: show additional information")
 )
 
 // constants for status codes for os.Exit()
@@ -34,6 +34,7 @@ func gomodvetMain() int {
 
 	flag.Parse()
 
+	status := Success
 	// check we have a current go.mod
 	modExists, err := modvet.ModExists()
 	if err != nil {
@@ -67,10 +68,7 @@ func gomodvetMain() int {
 			return OtherErr
 		}
 		if flagged {
-			// TODO: our first-pass set of tests currently assume we stop on failure.
-			// we could in theory keep going, but at least for now, exit.
-			fmt.Println("gomodvet: exiting prior to checking other rules.")
-			return OtherErr
+			status = OtherErr
 		}
 	}
 
@@ -82,9 +80,9 @@ func gomodvetMain() int {
 			return OtherErr
 		}
 		if flagged {
-			return OtherErr
+			status = OtherErr
 		}
 	}
 
-	return Success
+	return status
 }
