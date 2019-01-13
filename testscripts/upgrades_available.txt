@@ -12,21 +12,18 @@ cd gopath/src/sample
 # build to make sure we have a valid setup and up-to-date 'go.mod'.
 go build
 
-# gomodvet passes by default
-gomodvet
+# gomodvet passes if we disable -checkupgrades
+gomodvet -checkupgrades=false
 
-# gomodvet fails if we ask to check -upgradesavailable. We pass -v in case we need to troubleshoot.
+# gomodvet fails if we ask to check -checkupgrades. We pass -v in case we need to troubleshoot.
 ! gomodvet -v -checkupgrades=true
-stdout 'gomodvet-002: the current module has available updates'
+stdout 'gomodvet-002: dependencies have available updates'
 
 # update to all latest dependencies
 go get -u
 
-# gomodvet now passes
-gomodvet -checkupgrades=true
-
-# while we are here: gomodvet should pass if we ask to check -checkmultiplemajor
-gomodvet -checkmultiplemajor=true
+# gomodvet now passes. (checks now default to on).
+gomodvet
 
 # Two test files: a 'go.mod', and 'hello.go'.
 # The starting point for 'go.mod' is pointing at example-package-b v3.0.2.
