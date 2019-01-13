@@ -15,8 +15,8 @@ go build
 # cd to a directory with just the 'go.mod' file, and no '*.go' files.
 cd $GOPATH/src/sample/
 
-# gomodvet passes by default
-gomodvet
+# gomodvet passes if we disable -checkmultiplemajor
+gomodvet -checkmultiplemajor=false
 
 # gomodvet fails if we ask to check -upgradesavailable. We pass -v in case we need to troubleshoot.
 ! gomodvet -v -checkmultiplemajor=true
@@ -31,7 +31,7 @@ module sample/hello
 // require a pre-module and a post-module dependency
 require (
 	github.com/thepudds/example-package-b    v3.0.0  // pre-modules version
-    github.com/thepudds/example-package-b/v3 v3.0.2  // post-modules version
+    github.com/thepudds/example-package-b/v3 v3.0.3  // post-modules version
 )
 
 -- gopath/src/sample/subpkg/hello.go --
