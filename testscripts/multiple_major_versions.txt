@@ -12,8 +12,8 @@ cd gopath/src/sample
 # build to make sure we have a valid setup and up-to-date 'go.mod'.
 go build
 
-# gomodvet passes by default
-gomodvet
+# gomodvet passes if we disable -checkmultiplemajor
+gomodvet -checkmultiplemajor=false
 
 # gomodvet fails if we ask to check -upgradesavailable. We pass -v in case we need to troubleshoot.
 ! gomodvet -v -checkmultiplemajor=true
@@ -28,7 +28,7 @@ module sample/hello
 // require a pre-module and a post-module dependency
 require (
 	github.com/thepudds/example-package-b    v3.0.0  // pre-modules version
-    github.com/thepudds/example-package-b/v3 v3.0.2  // post-modules version
+    github.com/thepudds/example-package-b/v3 v3.0.3  // post-modules version
 )
 
 -- gopath/src/sample/hello.go --
