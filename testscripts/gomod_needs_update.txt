@@ -16,11 +16,8 @@ stdout 'gomodvet-001: the current module''s ''go.mod'' file would be updated by 
 # run 'go build', which brings our 'go.mod' up to date wrt imports in our source code.
 go build
 
-# gomodvet now passes
+# gomodvet now passes. (checks now default to on).
 gomodvet
-
-# while we are here: gomodvet should pass if we ask to check -checkupgrades
-gomodvet -checkupgrades=true
 
 # Two test files: a 'go.mod', and 'hello.go'.
 # The starting point for 'go.mod' is missing its 'require' directive 
