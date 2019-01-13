@@ -45,16 +45,17 @@ func CheckUpgrades(verbose bool) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	flagged := false
 	for _, mod := range mods {
 		if verbose {
 			fmt.Printf("gomodvet: checkupgrades: module %s: %+v\n", mod.Path, mod)
 		}
 		if mod.Update != nil {
-			fmt.Println("gomodvet-002: the current module has available updates: ", mod.Path, mod.Update.Version)
-			return true, nil
+			fmt.Println("gomodvet-002: dependencies have available updates: ", mod.Path, mod.Update.Version)
+			flagged = true
 		}
 	}
-	return false, nil
+	return flagged, nil
 }
 
 // CheckMultipleMajor checks if the current module has any dependencies with a module path has multiple major versions.
@@ -71,6 +72,7 @@ func CheckMultipleMajor(verbose bool) (bool, error) {
 		return false, err
 	}
 
+	flagged := false
 	for _, mod := range mods {
 		if verbose {
 			fmt.Printf("gomodvet: checkmultiplemajors: module %s: %+v\n", mod.Path, mod)
@@ -78,9 +80,9 @@ func CheckMultipleMajor(verbose bool) (bool, error) {
 		strippedPath := re.ReplaceAllString(mod.Path, "")
 		if priorPath, ok := modPaths[strippedPath]; ok {
 			fmt.Println("gomodvet-003: a module has multiple major versions in this build: ", priorPath, mod.Path)
-			return true, nil
+			flagged = true
 		}
 		modPaths[strippedPath] = mod.Path
 	}
-	return false, nil
+	return flagged, nil
 }
