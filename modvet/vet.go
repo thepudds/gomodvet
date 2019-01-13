@@ -18,13 +18,13 @@ func CheckModNeedsUpdate(verbose bool) (bool, error) {
 
 	// Note that 'go list -mod=readonly -m all' does not complain if an update is needed,
 	// but 'go list -mod=readonly' does complain.
-	out, err := exec.Command("go", "list", "-mod=readonly").CombinedOutput()
+	out, err := exec.Command("go", "list", "-mod=readonly", "./...").CombinedOutput()
 	if err != nil {
 		if verbose {
 			fmt.Println("gomodvet: error reported when running 'go list -mod=readonly':", string(out))
 		}
 
-		out2, err2 := exec.Command("go", "list").CombinedOutput()
+		out2, err2 := exec.Command("go", "list", "./...").CombinedOutput()
 		if err2 != nil {
 			// error with -mod=readonly, but also without -mod=readonly, so this is likely an error
 			// unrelated to whether or not an update is needed.
@@ -50,7 +50,7 @@ func CheckUpgrades(verbose bool) (bool, error) {
 			fmt.Printf("gomodvet: checkupgrades: module %s: %+v\n", mod.Path, mod)
 		}
 		if mod.Update != nil {
-			fmt.Println("gomodvet-002: the current module has available updates: ", mod.Path, *mod.Update)
+			fmt.Println("gomodvet-002: the current module has available updates: ", mod.Path, mod.Update.Version)
 			return true, nil
 		}
 	}
