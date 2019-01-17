@@ -1,0 +1,63 @@
+# enable modules.
+env GO111MODULE=on
+
+# cd to our nested module and build 
+# to make sure we have a valid setup and up-to-date 'go.mod'.
+cd $WORK/gopath/src/example.com/hello/sub
+go build
+
+# cd back to our top-level module and build there as well 
+# to also make sure we have a valid setup and up-to-date 'go.mod' there.
+cd $WORK/gopath/src/example.com/hello
+go build
+
+# gomodvet passes if we disable -excludedversion, and also disable -upgrades (given these are old versions)
+gomodvet -excludedversion=false -upgrades=false -pseudoversion=false -replace=false
+
+# gomodvet fails if we ask to check -excludedversion. We pass -v in case we need to troubleshoot.
+! gomodvet -v -excludedversion=true -upgrades=false -pseudoversion=false -replace=false
+stdout 'gomodvet-005: a module is using a version excluded by another module. excluded version: github.com/go-chi/chi v3.2.1\+incompatible'
+
+# Two test modules, each with a 'go.mod'.
+# The top-level module 'example.com/hello' imports the other module 'example.com/hello/sub'.
+# The top-level module requires the v3.2.1 version of go-chi, but the v3.2.1 version is excluded by the dependency.
+
+-- gopath/src/example.com/hello/go.mod --
+module example.com/hello
+
+require (
+        github.com/go-chi/chi  v3.2.1+incompatible
+        golang.org/x/net v0.0.0-20190110200230-915654e7eabc // indirect
+        example.com/hello/sub v0.0.0
+)
+
+replace example.com/hello/sub => ./sub
+
+-- gopath/src/example.com/hello/hello.go --
+
+package hello
+
+import (
+	_ "github.com/go-chi/chi"
+    _ "example.com/hello/sub"
+)
+
+-- gopath/src/example.com/hello/sub/go.mod --
+module example.com/hello/sub
+
+require (
+        github.com/go-chi/chi v3.2.0+incompatible
+        golang.org/x/net v0.0.0-20190110200230-915654e7eabc // indirect
+)
+
+// exclude a version required by the parent module.
+// note we don't put a '+incompatible', as an additional test
+exclude github.com/go-chi/chi v3.2.1
+
+-- gopath/src/example.com/hello/sub/sub.go --
+
+package sub
+
+import (
+	_ "github.com/go-chi/chi"
+)

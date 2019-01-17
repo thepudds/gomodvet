@@ -1,22 +1,17 @@
 # enable modules.
 env GO111MODULE=on
 
-# first run fails: we have no 'go.mod' file in $WORK
-# note that we need to use '' to escape the single quote around 'go.mod'.
-! gomodvet
-stdout 'gomodvet: no current ''go.mod'' file. please run from within a module.'
-
 # cd to a directory with a 'hello.go' and a 'go.mod' file.
 cd gopath/src/sample
 
 # build to make sure we have a valid setup and up-to-date 'go.mod'.
 go build
 
-# gomodvet passes if we disable -checkmultiplemajor
-gomodvet -checkmultiplemajor=false
+# gomodvet passes if we disable -multiplemajor
+gomodvet -multiplemajor=false
 
 # gomodvet fails if we ask to check -upgradesavailable. We pass -v in case we need to troubleshoot.
-! gomodvet -v -checkmultiplemajor=true
+! gomodvet -v -multiplemajor=true
 stdout 'gomodvet-003: a module has multiple major versions in this build'
 
 # Two test files: a 'go.mod', and 'hello.go'.

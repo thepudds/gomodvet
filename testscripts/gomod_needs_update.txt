@@ -1,11 +1,6 @@
 # enable modules.
 env GO111MODULE=on
 
-# first run fails: we have no 'go.mod' file in $WORK
-# note that we need to use '' to escape the single quote around 'go.mod'.
-! gomodvet
-stdout 'gomodvet: no current ''go.mod'' file. please run from within a module.'
-
 # cd to a directory with a 'go.mod' file that would be updated by a 'go build'.
 cd gopath/src/sample
 

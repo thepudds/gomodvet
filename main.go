@@ -8,13 +8,19 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/thepudds/gomodvet/modvet"
+	"github.com/thepudds/gomodvet/buildlist"
+	"github.com/thepudds/gomodvet/vet"
 )
 
 var (
-	flagCheckMultipleMajor = flag.Bool("checkmultiplemajor", true, "report if a module has multiple major versions in this build")
-	flagCheckUpgrades      = flag.Bool("checkupgrades", true, "report if the current module has available updates for its dependencies")
-	flagVerbose            = flag.Bool("v", false, "verbose: show additional information")
+	flagConflictingRequires = flag.Bool("conflictingrequires", true, "report if there are requirements for potentially conflicting v0 versions or '+incompatible' versions for different major versions")
+	flagExcludedVersion     = flag.Bool("excludedversion", true, "report if the current build is using a version excluded by a dependency")
+	flagMultipleMajor       = flag.Bool("multiplemajor", true, "report if a module has multiple major versions in use")
+	flagPrerelease          = flag.Bool("prerelease", true, "report if the current build is using a prerelease version (exclusive of pseudo-versions, which are reported separately)")
+	flagPseudoVersion       = flag.Bool("pseudoversion", true, "report if the current build is using a pseudo-version")
+	flagReplace             = flag.Bool("replace", true, "report if the main module is using any 'replace' directives")
+	flagUpgrades            = flag.Bool("upgrades", true, "report if the current module has available updates for its dependencies")
+	flagVerbose             = flag.Bool("v", false, "verbose: show additional information")
 )
 
 // constants for status codes for os.Exit()
@@ -36,51 +42,53 @@ func gomodvetMain() int {
 
 	status := Success
 	// check we have a current go.mod
-	modExists, err := modvet.ModExists()
+	modExists, err := buildlist.InModule()
 	if err != nil {
 		// TODO: stderr? stdout? For now, mostly stdout across the board.
 		fmt.Println("gomodvet:", err)
 		return OtherErr
 	}
 	if !modExists {
-		fmt.Println("gomodvet: no current 'go.mod' file. please run from within a module.")
+		fmt.Println("gomodvet: no current 'go.mod' file. please run from within a module with module-mode enabled.")
 		return OtherErr
 	}
 
 	// gomodvet-001
-	updateNeeded, err := modvet.CheckModNeedsUpdate(*flagVerbose)
+	updateNeeded, err := vet.GoModNeedsUpdate(*flagVerbose)
 	if err != nil {
 		fmt.Println("gomodvet:", err)
 		return OtherErr
 	}
 	if updateNeeded {
 		// we probably should not proceed in this case, so report, then return to end our processing.
-		fmt.Println("gomodvet-001: the current module's 'go.mod' file would be updated by a 'go build' or 'go list. Please update prior to using gomodvet.")
 		fmt.Println("gomodvet: exiting prior to checking other rules.")
 		return OtherErr
 	}
 
-	// gomodvet-002
-	if *flagCheckUpgrades {
-		flagged, err := modvet.CheckUpgrades(*flagVerbose)
-		if err != nil {
-			fmt.Println("gomodvet:", err)
-			return OtherErr
-		}
-		if flagged {
-			status = OtherErr
-		}
+	// loop over our remaining vet checks
+	funcs := []struct {
+		flag    *bool
+		vetFunc func(bool) (bool, error)
+	}{
+		{flagUpgrades, vet.Upgrades},                       // gomodvet-002
+		{flagMultipleMajor, vet.MultipleMajor},             // gomodvet-003
+		{flagConflictingRequires, vet.ConflictingRequires}, // gomodvet-004
+		{flagExcludedVersion, vet.ExcludedVersion},         // gomodvet-005
+		{flagPrerelease, vet.Prerelease},                   // gomodvet-006
+		{flagPseudoVersion, vet.PseudoVersion},             // gomodvet-007
+		{flagReplace, vet.Replace},                         // gomodvet-008
 	}
 
-	// gomodvet-003
-	if *flagCheckMultipleMajor {
-		flagged, err := modvet.CheckMultipleMajor(*flagVerbose)
-		if err != nil {
-			fmt.Println("gomodvet:", err)
-			return OtherErr
-		}
-		if flagged {
-			status = OtherErr
+	for i := range funcs {
+		if *funcs[i].flag {
+			flagged, err := funcs[i].vetFunc(*flagVerbose)
+			if err != nil {
+				fmt.Println("gomodvet:", err)
+				return OtherErr
+			}
+			if flagged {
+				status = OtherErr
+			}
 		}
 	}
 

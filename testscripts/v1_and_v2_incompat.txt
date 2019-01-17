@@ -1,0 +1,64 @@
+# enable modules.
+env GO111MODULE=on
+
+# cd to a directory with a 'hello.go' and a 'go.mod' file.
+cd $WORK/gopath/src/example.com/hello
+
+# build to make sure we have a valid setup and up-to-date 'go.mod'.
+go build
+
+# cd to our nested module, and build there as well
+cd $WORK/gopath/src/example.com/hello/sub
+go build
+
+# cd back to our top-level module
+cd $WORK/gopath/src/example.com/hello
+go build
+
+# gomodvet passes if we disable -conflictingrequires, and also disable -upgrades (given these are old versions)
+gomodvet -conflictingrequires=false -upgrades=false -pseudoversion=false -replace=false
+
+# gomodvet fails if we ask to check -conflictingrequires. We pass -v in case we need to troubleshoot.
+! gomodvet -v -conflictingrequires=true -upgrades=false -pseudoversion=false -replace=false
+stdout 'gomodvet-004: module "github.com/go-chi/chi" was required with potentially incompatible versions: v1.0.0, v2.0.0\+incompatible'
+
+# Two test modules, each with a 'go.mod'.
+# The top-level module 'example.com/hello' imports the other module 'example.com/hello/sub'.
+# One module imports a v1 version of go-chi, and the other module imports a v2+incompatible version of go-chi
+# which in theory could conflict according to semver.
+
+-- gopath/src/example.com/hello/go.mod --
+module example.com/hello
+
+require (
+        github.com/go-chi/chi  v2.0.0+incompatible
+        golang.org/x/net v0.0.0-20190110200230-915654e7eabc // indirect
+        example.com/hello/sub v0.0.0
+)
+
+replace example.com/hello/sub => ./sub
+
+-- gopath/src/example.com/hello/hello.go --
+
+package hello
+
+import (
+	_ "github.com/go-chi/chi"
+    _ "example.com/hello/sub"
+)
+
+-- gopath/src/example.com/hello/sub/go.mod --
+module example.com/hello/sub
+
+require (
+        github.com/go-chi/chi v1.0.0
+        golang.org/x/net v0.0.0-20190110200230-915654e7eabc // indirect
+)
+
+-- gopath/src/example.com/hello/sub/sub.go --
+
+package sub
+
+import (
+	_ "github.com/go-chi/chi"
+)

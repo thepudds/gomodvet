@@ -12,15 +12,15 @@ cd $GOPATH/src/sample/subpkg/
 # build to make sure we have a valid setup and up-to-date 'go.mod'.
 go build
 
+# gomodvet passes. (all rules default to on, currently).
+gomodvet 
+
 # cd to a directory with just the 'go.mod' file, and no '*.go' files.
 cd $GOPATH/src/sample/
 
-# gomodvet passes if we disable -checkmultiplemajor
-gomodvet -checkmultiplemajor=false
+# gomodvet again passes.
+gomodvet 
 
-# gomodvet fails if we ask to check -upgradesavailable. We pass -v in case we need to troubleshoot.
-! gomodvet -v -checkmultiplemajor=true
-stdout 'gomodvet-003: a module has multiple major versions in this build'
 
 # Two test files: a 'go.mod', and 'sub/hello.go'.
 # The latest available version for example-package-b/v3 is v3.0.3.
@@ -30,8 +30,7 @@ module sample/hello
 
 // require a pre-module and a post-module dependency
 require (
-	github.com/thepudds/example-package-b    v3.0.0  // pre-modules version
-    github.com/thepudds/example-package-b/v3 v3.0.3  // post-modules version
+    github.com/thepudds/example-package-b/v3 v3.0.3  
 )
 
 -- gopath/src/sample/subpkg/hello.go --
@@ -39,11 +38,9 @@ require (
 package main
 
 import (
-	premod "github.com/thepudds/example-package-b"   
-	postmod "github.com/thepudds/example-package-b/v3"   
+	"github.com/thepudds/example-package-b/v3"   
 )
 
 func main() {
-	premod.Hello()
-	postmod.Hello()
+	b.Hello()
 }
